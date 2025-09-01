@@ -96,7 +96,7 @@ func (r *schemaRegistry) LatestSchema(ctx context.Context, subject string) (Regi
 		Version: got.Version,
 		ID:      got.ID,
 		Body:    got.Schema.Schema,
-		Type:    got.Schema.Type.String(),
+		Type:    got.Type.String(),
 	}, true, nil
 }
 
@@ -110,7 +110,7 @@ func (r *schemaRegistry) RegisterSchema(ctx context.Context, subject string, sch
 		Version: created.Version,
 		ID:      created.ID,
 		Body:    created.Schema.Schema,
-		Type:    created.Schema.Type.String(),
+		Type:    created.Type.String(),
 	}, nil
 }
 
