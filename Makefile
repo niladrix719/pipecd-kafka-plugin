@@ -10,6 +10,10 @@ build:
 test:
 	go test -failfast -race ./...
 
+.PHONY: test/integration
+test/integration:
+	go test -tags integration -count=1 ./provider/...
+
 .PHONY: lint
 lint:
 	golangci-lint run
