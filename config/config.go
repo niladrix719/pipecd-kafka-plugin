@@ -26,11 +26,9 @@ type DeployTargetConfig struct {
 	// BootstrapServers is the list of broker addresses.
 	BootstrapServers []string `json:"bootstrapServers"`
 	// ClientID identifies this piped to the cluster in broker logs and quotas.
-	ClientID string `json:"clientID,omitempty"`
-	// TLS configures transport security.
-	TLS TLSConfig `json:"tls,omitempty"`
-	// SASL configures authentication.
-	SASL SASLConfig `json:"sasl,omitempty"`
+	ClientID string     `json:"clientID,omitempty"`
+	TLS      TLSConfig  `json:"tls,omitempty"`
+	SASL     SASLConfig `json:"sasl,omitempty"`
 	// SchemaRegistry is optional: a cluster may have no registry, in which case
 	// topics may not declare schemas.
 	SchemaRegistry *SchemaRegistryConfig `json:"schemaRegistry,omitempty"`
@@ -78,14 +76,12 @@ type SASLConfig struct {
 
 // SchemaRegistryConfig points at a Confluent-compatible schema registry.
 type SchemaRegistryConfig struct {
-	URL          string `json:"url"`
-	Username     string `json:"username,omitempty"`
-	Password     string `json:"password,omitempty"`
-	PasswordFile string `json:"passwordFile,omitempty"`
-	// CAFile verifies the registry's certificate.
-	CAFile string `json:"caFile,omitempty"`
-	// InsecureSkipVerify disables certificate verification.
-	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
+	URL                string `json:"url"`
+	Username           string `json:"username,omitempty"`
+	Password           string `json:"password,omitempty"`
+	PasswordFile       string `json:"passwordFile,omitempty"`
+	CAFile             string `json:"caFile,omitempty"`
+	InsecureSkipVerify bool   `json:"insecureSkipVerify,omitempty"`
 }
 
 // ApplicationConfigSpec is the application-scoped config, describing which part

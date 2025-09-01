@@ -23,6 +23,8 @@ type schemaRegistry struct {
 	client *sr.Client
 }
 
+var _ Registry = (*schemaRegistry)(nil)
+
 // NewRegistry connects to the schema registry described by a deploy target.
 func NewRegistry(cfg config.SchemaRegistryConfig) (Registry, error) {
 	opts := []sr.ClientOpt{sr.URLs(cfg.URL)}
@@ -69,7 +71,6 @@ func registryHTTPClient(cfg config.SchemaRegistryConfig) (*http.Client, error) {
 	return &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}, nil
 }
 
-// CheckCompatibility implements Registry.
 func (r *schemaRegistry) CheckCompatibility(ctx context.Context, subject string, schema Schema) (CompatibilityResult, error) {
 	result, err := r.client.CheckCompatibility(ctx, subject, latestVersion, toSRSchema(schema))
 	if err != nil {
@@ -82,7 +83,6 @@ func (r *schemaRegistry) CheckCompatibility(ctx context.Context, subject string,
 	return CompatibilityResult{Compatible: result.Is, Messages: result.Messages}, nil
 }
 
-// LatestSchema implements Registry.
 func (r *schemaRegistry) LatestSchema(ctx context.Context, subject string) (RegisteredSchema, bool, error) {
 	got, err := r.client.SchemaByVersion(ctx, subject, latestVersion)
 	if err != nil {
@@ -100,7 +100,6 @@ func (r *schemaRegistry) LatestSchema(ctx context.Context, subject string) (Regi
 	}, true, nil
 }
 
-// RegisterSchema implements Registry.
 func (r *schemaRegistry) RegisterSchema(ctx context.Context, subject string, schema Schema) (RegisteredSchema, error) {
 	created, err := r.client.CreateSchema(ctx, subject, toSRSchema(schema))
 	if err != nil {
@@ -115,7 +114,6 @@ func (r *schemaRegistry) RegisterSchema(ctx context.Context, subject string, sch
 	}, nil
 }
 
-// SoftDeleteVersion implements Registry.
 func (r *schemaRegistry) SoftDeleteVersion(ctx context.Context, subject string, version int) error {
 	if err := r.client.DeleteSchema(ctx, subject, version, sr.SoftDelete); err != nil {
 		return fmt.Errorf("soft-deleting version %d of subject %s: %w", version, subject, err)

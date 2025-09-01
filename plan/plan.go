@@ -257,7 +257,6 @@ func diffConfig(desired, actual map[string]string) (provider.ConfigChange, map[s
 	return change, before
 }
 
-// protectedBy returns the protected pattern a topic matches, if any.
 func protectedBy(name string, patterns []string) (string, bool) {
 	for _, pattern := range patterns {
 		if provider.Matches(name, []string{pattern}) {
@@ -267,7 +266,6 @@ func protectedBy(name string, patterns []string) (string, bool) {
 	return "", false
 }
 
-// desiredState converts a declared topic into the state to create.
 func desiredState(topic provider.Topic) *provider.TopicState {
 	config := make(map[string]string, len(topic.Config))
 	for key, value := range topic.Config {

@@ -27,6 +27,8 @@ type kafkaCluster struct {
 	admin  *kadm.Client
 }
 
+var _ Cluster = (*kafkaCluster)(nil)
+
 // NewCluster connects to the cluster described by a deploy target.
 func NewCluster(cfg config.DeployTargetConfig) (Cluster, error) {
 	client, err := newKgoClient(cfg)
@@ -115,9 +117,7 @@ func buildSASL(cfg config.SASLConfig) (sasl.Mechanism, error) {
 	}
 }
 
-// ListTopics implements Cluster.
-//
-// This dials a client of its own rather than reusing the one held by the
+// ListTopics dials a client of its own rather than reusing the one held by the
 // cluster, because an unfiltered listing reflects the set of topics the client
 // already knows about, not the set that exists on the broker. A client that has
 // created or altered a topic returns a listing that is missing entries: verified
@@ -186,7 +186,6 @@ func (c *kafkaCluster) ListTopics(ctx context.Context) (map[string]TopicState, e
 	return states, nil
 }
 
-// CreateTopic implements Cluster.
 func (c *kafkaCluster) CreateTopic(ctx context.Context, topic TopicState) error {
 	configs := make(map[string]*string, len(topic.Config))
 	for key, value := range topic.Config {
@@ -203,7 +202,6 @@ func (c *kafkaCluster) CreateTopic(ctx context.Context, topic TopicState) error 
 	return nil
 }
 
-// AlterTopicConfig implements Cluster.
 func (c *kafkaCluster) AlterTopicConfig(ctx context.Context, name string, change ConfigChange) error {
 	if change.Empty() {
 		return nil
@@ -229,7 +227,6 @@ func (c *kafkaCluster) AlterTopicConfig(ctx context.Context, name string, change
 	return nil
 }
 
-// IncreasePartitions implements Cluster.
 func (c *kafkaCluster) IncreasePartitions(ctx context.Context, name string, count int) error {
 	responses, err := c.admin.UpdatePartitions(ctx, count, name)
 	if err != nil {
@@ -243,7 +240,6 @@ func (c *kafkaCluster) IncreasePartitions(ctx context.Context, name string, coun
 	return nil
 }
 
-// DeleteTopic implements Cluster.
 func (c *kafkaCluster) DeleteTopic(ctx context.Context, name string) error {
 	responses, err := c.admin.DeleteTopics(ctx, name)
 	if err != nil {
@@ -257,5 +253,4 @@ func (c *kafkaCluster) DeleteTopic(ctx context.Context, name string) error {
 	return nil
 }
 
-// Close implements Cluster.
 func (c *kafkaCluster) Close() { c.client.Close() }

@@ -38,7 +38,6 @@ func NewFakeCluster(topics ...TopicState) *FakeCluster {
 	return &FakeCluster{topics: byName, FailOn: map[string]error{}}
 }
 
-// ListTopics implements Cluster.
 func (c *FakeCluster) ListTopics(context.Context) (map[string]TopicState, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -51,7 +50,6 @@ func (c *FakeCluster) ListTopics(context.Context) (map[string]TopicState, error)
 	return out, nil
 }
 
-// CreateTopic implements Cluster.
 func (c *FakeCluster) CreateTopic(_ context.Context, topic TopicState) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -70,7 +68,6 @@ func (c *FakeCluster) CreateTopic(_ context.Context, topic TopicState) error {
 	return nil
 }
 
-// AlterTopicConfig implements Cluster.
 func (c *FakeCluster) AlterTopicConfig(_ context.Context, name string, change ConfigChange) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -100,7 +97,6 @@ func (c *FakeCluster) AlterTopicConfig(_ context.Context, name string, change Co
 	return nil
 }
 
-// IncreasePartitions implements Cluster.
 func (c *FakeCluster) IncreasePartitions(_ context.Context, name string, count int) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -121,7 +117,6 @@ func (c *FakeCluster) IncreasePartitions(_ context.Context, name string, count i
 	return nil
 }
 
-// DeleteTopic implements Cluster.
 func (c *FakeCluster) DeleteTopic(_ context.Context, name string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -137,7 +132,6 @@ func (c *FakeCluster) DeleteTopic(_ context.Context, name string) error {
 	return nil
 }
 
-// Close implements Cluster.
 func (c *FakeCluster) Close() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -194,7 +188,6 @@ func (r *FakeRegistry) Seed(subject, body string) {
 	})
 }
 
-// CheckCompatibility implements Registry.
 func (r *FakeRegistry) CheckCompatibility(_ context.Context, subject string, _ Schema) (CompatibilityResult, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -208,7 +201,6 @@ func (r *FakeRegistry) CheckCompatibility(_ context.Context, subject string, _ S
 	return CompatibilityResult{Compatible: true}, nil
 }
 
-// LatestSchema implements Registry.
 func (r *FakeRegistry) LatestSchema(_ context.Context, subject string) (RegisteredSchema, bool, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -223,7 +215,6 @@ func (r *FakeRegistry) LatestSchema(_ context.Context, subject string) (Register
 	return versions[len(versions)-1], true, nil
 }
 
-// RegisterSchema implements Registry.
 func (r *FakeRegistry) RegisterSchema(_ context.Context, subject string, schema Schema) (RegisteredSchema, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -244,7 +235,6 @@ func (r *FakeRegistry) RegisterSchema(_ context.Context, subject string, schema 
 	return registered, nil
 }
 
-// SoftDeleteVersion implements Registry.
 func (r *FakeRegistry) SoftDeleteVersion(_ context.Context, subject string, version int) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
