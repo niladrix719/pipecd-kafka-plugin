@@ -1,0 +1,10 @@
+name: orders
+partitions: 12
+replicationFactor: 1
+config:
+  retention.ms: "604800000"
+  cleanup.policy: delete
+schema:
+  subject: orders-value
+  file: orders.avsc
+  compatibility: BACKWARD
