@@ -1,0 +1,4 @@
+.artifacts/
+.cache/
+*.out
+.DS_Store

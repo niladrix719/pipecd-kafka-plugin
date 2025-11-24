@@ -1,0 +1,43 @@
+# A local Kafka cluster and schema registry for developing against this plugin.
+#
+#   docker compose up -d
+#
+# Redpanda is Kafka API compatible and starts in seconds, so the whole plugin
+# can be exercised end to end without a managed cluster.
+services:
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    container_name: kafka-plugin-redpanda
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://localhost:9092
+      - --schema-registry-addr=0.0.0.0:8081
+    ports:
+      - "9092:9092"
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  console:
+    image: redpandadata/console:v2.7.2
+    container_name: kafka-plugin-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_SCHEMAREGISTRY_ENABLED: "true"
+      KAFKA_SCHEMAREGISTRY_URLS: http://redpanda:8081

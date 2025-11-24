@@ -1,0 +1,25 @@
+apiVersion: pipecd.dev/v1beta1
+kind: Application
+spec:
+  name: orders-kafka
+  labels:
+    team: platform
+  plugins:
+    kafka:
+      topicsDir: topics
+      schemasDir: schemas
+      # This application owns only these topics on a shared cluster.
+      ownership:
+        - orders
+        - payments
+      defaults:
+        replicationFactor: 1
+  pipeline:
+    stages:
+      # Report what would change, and stop the deployment if anything in the
+      # plan is not permitted by the deploy target.
+      - name: KAFKA_PLAN
+      # Register schemas before the topics are applied, so a backward-compatible
+      # schema is available to consumers first.
+      - name: KAFKA_REGISTER_SCHEMA
+      - name: KAFKA_APPLY

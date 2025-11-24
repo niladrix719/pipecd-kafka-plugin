@@ -1,0 +1,6 @@
+name: payments
+partitions: 6
+replicationFactor: 1
+config:
+  retention.ms: "2592000000"
+  min.insync.replicas: "1"
