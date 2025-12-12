@@ -20,12 +20,24 @@ import (
 
 // kafkaCluster is the Cluster implementation backed by a real broker.
 type kafkaCluster struct {
+	// cfg is kept so ListTopics can dial a client of its own. See the comment
+	// on ListTopics for why that is necessary.
+	cfg    config.DeployTargetConfig
 	client *kgo.Client
 	admin  *kadm.Client
 }
 
 // NewCluster connects to the cluster described by a deploy target.
 func NewCluster(cfg config.DeployTargetConfig) (Cluster, error) {
+	client, err := newKgoClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &kafkaCluster{cfg: cfg, client: client, admin: kadm.NewClient(client)}, nil
+}
+
+// newKgoClient dials the brokers described by a deploy target.
+func newKgoClient(cfg config.DeployTargetConfig) (*kgo.Client, error) {
 	opts := []kgo.Opt{kgo.SeedBrokers(cfg.BootstrapServers...)}
 	if cfg.ClientID != "" {
 		opts = append(opts, kgo.ClientID(cfg.ClientID))
@@ -51,7 +63,7 @@ func NewCluster(cfg config.DeployTargetConfig) (Cluster, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connecting to the Kafka cluster: %w", err)
 	}
-	return &kafkaCluster{client: client, admin: kadm.NewClient(client)}, nil
+	return client, nil
 }
 
 func buildTLSConfig(cfg config.TLSConfig) (*tls.Config, error) {
@@ -104,8 +116,28 @@ func buildSASL(cfg config.SASLConfig) (sasl.Mechanism, error) {
 }
 
 // ListTopics implements Cluster.
+//
+// This dials a client of its own rather than reusing the one held by the
+// cluster, because an unfiltered listing reflects the set of topics the client
+// already knows about, not the set that exists on the broker. A client that has
+// created or altered a topic returns a listing that is missing entries: verified
+// against Redpanda, a topic created moments earlier is absent, and one whose
+// partitions were just changed can vanish from the listing entirely while the
+// broker reports it correctly.
+//
+// The plan is the input to every decision this plugin makes, so it has to be
+// read from the broker rather than from a cache that mutations have disturbed.
+// A connection per listing is a fair price: it happens a few times per
+// deployment, not in a hot path.
 func (c *kafkaCluster) ListTopics(ctx context.Context) (map[string]TopicState, error) {
-	details, err := c.admin.ListTopics(ctx)
+	client, err := newKgoClient(c.cfg)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+	admin := kadm.NewClient(client)
+
+	details, err := admin.ListTopics(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing topics: %w", err)
 	}
@@ -128,7 +160,7 @@ func (c *kafkaCluster) ListTopics(ctx context.Context) (map[string]TopicState, e
 		return states, nil
 	}
 
-	resources, err := c.admin.DescribeTopicConfigs(ctx, names...)
+	resources, err := admin.DescribeTopicConfigs(ctx, names...)
 	if err != nil {
 		return nil, fmt.Errorf("describing topic configs: %w", err)
 	}
