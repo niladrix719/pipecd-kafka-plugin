@@ -16,7 +16,6 @@ type TopicState struct {
 
 // ConfigChange is an incremental alteration to a topic's config.
 type ConfigChange struct {
-	// Set are the keys to set to a new value.
 	Set map[string]string
 	// Delete are the keys to reset to the broker default.
 	Delete []string
@@ -31,19 +30,13 @@ func (c ConfigChange) Empty() bool { return len(c.Set) == 0 && len(c.Delete) == 
 // in-memory cluster, and so the real client is only exercised in tests that opt
 // into a running broker.
 type Cluster interface {
-	// ListTopics returns the current state of every topic on the cluster.
 	ListTopics(ctx context.Context) (map[string]TopicState, error)
-	// CreateTopic creates a topic with the given partitions, replication factor
-	// and config.
 	CreateTopic(ctx context.Context, topic TopicState) error
-	// AlterTopicConfig applies an incremental config change to a topic.
 	AlterTopicConfig(ctx context.Context, name string, change ConfigChange) error
 	// IncreasePartitions raises a topic's partition count. Kafka cannot lower
 	// it, so this is one-way.
 	IncreasePartitions(ctx context.Context, name string, count int) error
-	// DeleteTopic deletes a topic and everything in it.
 	DeleteTopic(ctx context.Context, name string) error
-	// Close releases the connection to the cluster.
 	Close()
 }
 
@@ -71,7 +64,6 @@ type Registry interface {
 	// LatestSchema returns the current version of a subject. The boolean is
 	// false when the subject does not exist yet.
 	LatestSchema(ctx context.Context, subject string) (RegisteredSchema, bool, error)
-	// RegisterSchema registers a new version of a subject.
 	RegisterSchema(ctx context.Context, subject string, schema Schema) (RegisteredSchema, error)
 	// SoftDeleteVersion soft-deletes one version of a subject, which is the
 	// closest thing the registry offers to undoing a registration.

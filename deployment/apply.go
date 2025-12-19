@@ -69,8 +69,6 @@ func (p *Plugin) executeApply(ctx context.Context, in stageInput) *sdk.ExecuteSt
 	return success()
 }
 
-// applyChanges applies each change in order, returning how many succeeded and
-// how many failed.
 func applyChanges(ctx context.Context, cluster provider.Cluster, changes []plan.Change, lp sdk.StageLogPersister, continueOnError bool) (applied, failed int) {
 	for _, change := range changes {
 		lp.Infof("Applying: %s", change.Describe())
@@ -88,7 +86,6 @@ func applyChanges(ctx context.Context, cluster provider.Cluster, changes []plan.
 	return applied, failed
 }
 
-// applyChange performs a single change.
 func applyChange(ctx context.Context, cluster provider.Cluster, change plan.Change) error {
 	switch change.Kind {
 	case plan.CreateTopic:
