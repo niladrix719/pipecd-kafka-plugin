@@ -7,6 +7,43 @@ the real cluster, checks schema compatibility with the registry, and applies it.
 Built on [`piped-plugin-sdk-go`](https://github.com/pipe-cd/piped-plugin-sdk-go) for the
 plugin-arched piped (`pipedv1`).
 
+**New here?** [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) walks through running this against
+a real PipeCD control plane and a real Kafka cluster on your own machine, end to end.
+
+## How it works
+
+PipeCD is pull-based: an agent called **piped** runs in your infrastructure and watches a git repo. It
+never gets pushed to. This plugin is what piped calls when an application's pipeline reaches a
+`KAFKA_*` stage.
+
+```
+git repo                     piped                          this plugin           Kafka
+───────────                  ─────                          ───────────           ─────
+topics/orders.yaml    ──►    detects a new commit     ──►   KAFKA_PLAN      ──►   read actual state
+schemas/orders.avsc          checks out the old and         diff desired          check schema
+                              new commit                     vs. actual            compatibility
+                                                              │
+                                                    blocked?  │  clean
+                                                   ┌──────────┴──────────┐
+                                              stop, nothing          KAFKA_REGISTER_SCHEMA
+                                              is touched                    │
+                                                                       KAFKA_APPLY   ──►   create/alter/
+                                                                                            delete topics
+```
+
+Three things fall out of that shape:
+
+- **The diff is between commits, not files you edited.** piped checks out the application directory at
+  the *previously deployed* commit and at the *target* commit, and the plugin diffs those two — so an
+  accumulation of several merges since the last deploy shows up as one plan, not one PR at a time.
+- **`KAFKA_PLAN` runs before anything is touched.** It reads the real cluster and the real registry,
+  classifies every change by whether it's reversible, and fails the whole deployment if it contains an
+  irreversible operation the deploy target hasn't explicitly permitted (`allowPartitionIncrease`,
+  `allowTopicDeletion`). See [`plan/change.go`](plan/change.go) for exactly what's reversible and why.
+- **Schema registration is its own stage**, separate from applying topic changes, specifically so an
+  operator can order it against a service rollout in the pipeline — register a backward-compatible
+  schema before consumers update, for instance.
+
 ## Why this is not just "apply the YAML"
 
 Kafka is an unusually unforgiving deploy target, because **some changes cannot be undone**:
@@ -166,12 +203,16 @@ make build    # build the plugin binary
 make down
 ```
 
-Redpanda is Kafka API compatible and starts in seconds, so the plugin can be exercised end to end
-without a managed cluster. `examples/simple` is a ready-made application directory to point piped at.
+Redpanda is Kafka API compatible and starts in seconds, so the code above can be exercised against a
+real broker without a managed cluster. `examples/simple` is a ready-made application directory.
 
 The test suite needs none of it: the cluster and registry are behind interfaces, with in-memory
 implementations in `provider` that enforce the same rules the real ones do (partition counts only go
 up, a deleted topic is really gone).
+
+`make up` above only starts Kafka — for the full loop with a real PipeCD control plane and piped
+actually deploying this plugin's plan, see [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md), which
+uses `./hack/local-env.sh` to bring up everything else.
 
 ## Status
 
