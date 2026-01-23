@@ -13,11 +13,6 @@ import (
 )
 
 // executeApply runs KAFKA_APPLY: it makes the topic changes in the plan.
-//
-// The plan is rebuilt here rather than carried over from KAFKA_PLAN. The cluster
-// can change between the two stages, and applying a stale plan would be the
-// worse failure: it could delete a topic somebody recreated, or skip a change
-// that has since become necessary.
 func (p *Plugin) executeApply(ctx context.Context, in stageInput) *sdk.ExecuteStageResponse {
 	lp := in.lp
 	var opts config.ApplyStageOptions

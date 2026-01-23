@@ -8,9 +8,7 @@ type TopicState struct {
 	Name              string
 	Partitions        int
 	ReplicationFactor int
-	// Config holds only the explicitly set (dynamic) topic configs. Broker
-	// defaults are deliberately excluded: including them would make every
-	// unmanaged default look like drift on the first plan.
+	// Config holds only the explicitly set (dynamic) topic configs.
 	Config map[string]string
 }
 
@@ -25,10 +23,6 @@ type ConfigChange struct {
 func (c ConfigChange) Empty() bool { return len(c.Set) == 0 && len(c.Delete) == 0 }
 
 // Cluster is the subset of Kafka admin operations this plugin needs.
-//
-// It is an interface so the plan and apply logic can be tested against an
-// in-memory cluster, and so the real client is only exercised in tests that opt
-// into a running broker.
 type Cluster interface {
 	ListTopics(ctx context.Context) (map[string]TopicState, error)
 	CreateTopic(ctx context.Context, topic TopicState) error

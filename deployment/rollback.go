@@ -10,15 +10,6 @@ import (
 )
 
 // executeRollback runs KAFKA_ROLLBACK after a failed deployment.
-//
-// Rollback is expressed as a deployment of the previously running desired state
-// against the cluster as it is now. That handles a partial apply for free: the
-// plan simply describes whatever gap is actually left.
-//
-// What it cannot do is undo an irreversible change. A partition increase cannot
-// be reversed, and a deleted topic's data is gone. Those are reported by name
-// and skipped, so the log says what was restored and what stayed changed rather
-// than implying the world was put back.
 func (p *Plugin) executeRollback(ctx context.Context, in stageInput) *sdk.ExecuteStageResponse {
 	lp := in.lp
 	running := in.runningSource

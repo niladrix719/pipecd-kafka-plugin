@@ -39,10 +39,6 @@ type Input struct {
 
 // Build compares the desired state against the actual state and returns the
 // changes that would close the gap.
-//
-// It never mutates anything. Every reason a change cannot be applied is
-// collected into Blocked rather than returned as an error, so a single plan can
-// report every problem at once instead of one per run.
 func Build(ctx context.Context, in Input) (*Plan, error) {
 	p := &Plan{}
 
