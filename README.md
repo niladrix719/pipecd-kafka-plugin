@@ -12,66 +12,11 @@ a real PipeCD control plane and a real Kafka cluster on your own machine, end to
 
 ## How it works
 
-PipeCD is pull-based: an agent called **piped** runs in your infrastructure and watches a git repo. It
-never gets pushed to. This plugin is what piped calls when an application's pipeline reaches a
-`KAFKA_*` stage.
+PipeCD is pull-based. An agent called **piped** runs in your infrastructure and watches a git repo;
+nothing ever gets pushed to it. This plugin is what piped calls when an application's pipeline
+reaches a `KAFKA_*` stage.
 
-```
-git repo                     piped                          this plugin           Kafka
-───────────                  ─────                          ───────────           ─────
-topics/orders.yaml    ──►    detects a new commit     ──►   KAFKA_PLAN      ──►   read actual state
-schemas/orders.avsc          checks out the old and         diff desired          check schema
-                              new commit                     vs. actual            compatibility
-                                                              │
-                                                    blocked?  │  clean
-                                                   ┌──────────┴──────────┐
-                                              stop, nothing          KAFKA_REGISTER_SCHEMA
-                                              is touched                    │
-                                                                       KAFKA_APPLY   ──►   create/alter/
-                                                                                            delete topics
-```
-
-Three things fall out of that shape:
-
-- **The diff is between commits, not files you edited.** piped checks out the application directory at
-  the *previously deployed* commit and at the *target* commit, and the plugin diffs those two — so an
-  accumulation of several merges since the last deploy shows up as one plan, not one PR at a time.
-- **`KAFKA_PLAN` runs before anything is touched.** It reads the real cluster and the real registry,
-  classifies every change by whether it's reversible, and fails the whole deployment if it contains an
-  irreversible operation the deploy target hasn't explicitly permitted (`allowPartitionIncrease`,
-  `allowTopicDeletion`). See [`plan/change.go`](plan/change.go) for exactly what's reversible and why.
-- **Schema registration is its own stage**, separate from applying topic changes, specifically so an
-  operator can order it against a service rollout in the pipeline — register a backward-compatible
-  schema before consumers update, for instance.
-
-## Why this is not just "apply the YAML"
-
-Kafka is an unusually unforgiving deploy target, because **some changes cannot be undone**:
-
-| Operation | Reversible? | What the plugin does |
-| --- | --- | --- |
-| Create a topic | Yes — delete it | Applied |
-| Change a topic config | Yes — restore the old values | Applied, previous values recorded for rollback |
-| Register a schema version | Weakly — the version can be soft-deleted | Applied after a compatibility check |
-| **Increase partitions** | **No** — Kafka cannot lower a partition count, and it changes which partition a key hashes to | Refused unless the deploy target opts in |
-| **Delete a topic** | **No** — the data is gone | Refused unless the deploy target opts in |
-
-So the plan stage is load-bearing rather than decorative. It classifies every change by
-reversibility, refuses anything the cluster's deploy target has not explicitly permitted, and fails
-the deployment **before a single change is applied**. And rollback tells the truth: it restores what
-it can and names, in the log, exactly what it could not undo.
-
-Two other things fall out of taking Kafka seriously:
-
-- **A schema that would break consumers never gets registered.** Compatibility is checked against the
-  registry while the plan is being built, so an incompatible schema blocks the deployment instead of
-  being discovered by a consumer at 3am.
-- **Registration is its own stage.** `KAFKA_REGISTER_SCHEMA` is separate from `KAFKA_APPLY` so it can
-  be ordered against the rollout of your services: a backward-compatible schema should reach the
-  registry before consumers are updated, a forward-compatible one before producers are. Folding it
-  into apply would make that ordering impossible to express.
-
-## Stages
+![piped checks out the last-deployed and target revisions; KAFKA_PLAN reads the brokers and the schema registry without touching anything; only a clean plan reaches KAFKA_REGISTER_SCHEMA and KAFKA_APPLY](docs/img/workflow.png)
 
 | Stage | What it does |
 | --- | --- |
@@ -80,12 +25,25 @@ Two other things fall out of taking Kafka seriously:
 | `KAFKA_APPLY` | Creates, updates and deletes topics to match the desired state. |
 | `KAFKA_ROLLBACK` | Added automatically. Restores the previously running state as far as Kafka allows. |
 
+Three things fall out of that shape:
+
+- **The diff is between commits, not files you edited.** piped checks out the application directory at
+  the *previously deployed* commit and at the *target* commit, and the plugin diffs those two. Several
+  merges piled up since the last deploy show up as one plan, not one PR at a time.
+- **`KAFKA_PLAN` runs before anything is touched.** It reads the real cluster and the real registry,
+  classifies every change by whether it's reversible, and fails the whole deployment if it contains an
+  irreversible operation the deploy target hasn't explicitly permitted (`allowPartitionIncrease`,
+  `allowTopicDeletion`). See [`plan/change.go`](plan/change.go) for what counts as reversible and why.
+- **Schema registration is its own stage.** It's kept separate from applying topic changes so you can
+  order it against a service rollout in the pipeline, for instance registering a backward-compatible
+  schema before consumers update.
+
 ## Configuration
 
-### Deploy target — one Kafka cluster
+### Deploy target: one Kafka cluster
 
-The safety rails live on the deploy target, not the application. The same application config is
-deployed to staging and to production; a rail defined per application would travel with the change
+The safety rails live on the deploy target, not on the application. The same application config gets
+deployed to staging and to production, so a rail defined per application would travel with the change
 into production.
 
 ```yaml
@@ -112,17 +70,17 @@ plugins:
 
 | Field | Default | Description |
 | --- | --- | --- |
-| `bootstrapServers` | — | Broker addresses. Required. |
-| `clientID` | — | Identifies this piped in broker logs and quotas. |
+| `bootstrapServers` | required | Broker addresses. |
+| `clientID` | none | Identifies this piped in broker logs and quotas. |
 | `tls` | disabled | `enabled`, `caFile`, `certFile`, `keyFile`, `insecureSkipVerify`. |
 | `sasl` | disabled | `mechanism` (`PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`), `username`, and `password` or `passwordFile`. |
 | `schemaRegistry` | none | `url`, optional `username` and `password`/`passwordFile`, `caFile`. Declaring a schema without this is an error. |
 | `allowTopicDeletion` | `false` | Permit deleting topics that are no longer declared. |
 | `allowPartitionIncrease` | `false` | Permit raising partition counts. |
-| `protectedTopics` | — | Globs this piped must never modify, whatever the application declares. |
+| `protectedTopics` | none | Globs this piped must never modify, whatever the application declares. |
 | `driftDetectionEnabled` | `true` | Compare live state against desired state outside a deployment. |
 
-### Application — a slice of a shared cluster
+### Application: a slice of a shared cluster
 
 ```yaml
 spec:
@@ -140,7 +98,7 @@ spec:
 ```
 
 `ownership` is what makes deletion expressible without being catastrophic. A Kafka cluster is shared
-by many applications; without a scope, a plan would look at every topic on the cluster and propose
+by many applications, and without a scope a plan would look at every topic on the cluster and propose
 deleting the ones it has no file for. Topics outside the scope are invisible to this application, and
 declaring a topic outside it is an error rather than a silent orphan.
 
@@ -160,8 +118,8 @@ schema:
   compatibility: BACKWARD
 ```
 
-One file may hold several topics as a YAML stream. A config key that was set and is no longer
-declared is reset to the broker default, not left behind.
+One file can hold several topics as a YAML stream. A config key that was set and is no longer
+declared gets reset to the broker default rather than left behind.
 
 ### Stage options
 
@@ -203,21 +161,19 @@ make build    # build the plugin binary
 make down
 ```
 
-Redpanda is Kafka API compatible and starts in seconds, so the code above can be exercised against a
-real broker without a managed cluster. `examples/simple` is a ready-made application directory.
+Redpanda is Kafka API compatible and starts in seconds, so you can exercise the code above against a
+real broker without paying for a managed cluster. `examples/simple` is a ready-made application
+directory. Note that `make up` only starts Kafka; for the full loop with a real control plane and
+piped actually running this plugin, use [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md).
 
-The test suite needs none of it: the cluster and registry are behind interfaces, with in-memory
-implementations in `provider` that enforce the same rules the real ones do (partition counts only go
-up, a deleted topic is really gone).
-
-`make up` above only starts Kafka — for the full loop with a real PipeCD control plane and piped
-actually deploying this plugin's plan, see [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md), which
-uses `./hack/local-env.sh` to bring up everything else.
+The test suite needs none of that. The cluster and registry sit behind interfaces, with in-memory
+implementations in `provider` that enforce the same rules the real ones do: partition counts only go
+up, and a deleted topic is really gone.
 
 ## Status
 
-Early. The plan, apply, schema registration and rollback paths are implemented and tested; drift
-detection and the live-state view are not wired up yet.
+Early. The plan, apply, schema registration and rollback paths are implemented and tested. Drift
+detection and the live-state view aren't wired up yet.
 
 ## License
 

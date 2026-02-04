@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700" role="img"
+           aria-label="Flowchart: piped polls the git repo and checks out the last-deployed and target revisions, then runs the plugin's KAFKA_* stages. KAFKA_PLAN reads the Kafka brokers and the Schema Registry without changing anything. If a change is blocked by the deploy target the deployment fails and nothing is applied; otherwise KAFKA_REGISTER_SCHEMA writes new schema versions to the registry and KAFKA_APPLY creates, alters and deletes topics on the brokers. If a stage fails, KAFKA_ROLLBACK restores the reversible changes on the brokers.">
+<style>
+  .d-box{fill:#FFFFFF;stroke:#CFD8DD;stroke-width:1.5}
+  .d-box-ext{fill:#F3F6F7;stroke:#5C6975;stroke-width:1.4}
+  .d-box-stop{fill:#F7E7E4;stroke:#A63228;stroke-width:1.5}
+  .d-diamond{fill:#FFFFFF;stroke:#12181E;stroke-width:1.5}
+  .d-bound{fill:none;stroke:#CFD8DD;stroke-width:1.25;stroke-dasharray:6 6}
+  .t-h{font:600 13.5px "IBM Plex Sans",Helvetica,Arial,sans-serif;fill:#12181E}
+  .t-stage{font:600 12.5px "IBM Plex Mono",Menlo,monospace;fill:#0B6E7F}
+  .t-sub{font:400 10px "IBM Plex Sans",Helvetica,Arial,sans-serif;fill:#5C6975}
+  .t-path{font:400 10px "IBM Plex Mono",Menlo,monospace;fill:#12181E}
+  .t-eyebrow{font:500 9.5px "IBM Plex Mono",Menlo,monospace;fill:#5C6975;letter-spacing:.14em}
+  .t-edge{font:500 10px "IBM Plex Mono",Menlo,monospace;fill:#5C6975}
+  .t-edge-d{font:500 10px "IBM Plex Mono",Menlo,monospace;fill:#A63228}
+  .t-stop{font:600 12.5px "IBM Plex Sans",Helvetica,Arial,sans-serif;fill:#A63228}
+  .t-dia{font:500 10.5px "IBM Plex Mono",Menlo,monospace;fill:#12181E}
+  .e{fill:none;stroke:#12181E;stroke-width:1.6}
+  .e-read{fill:none;stroke:#5C6975;stroke-width:1.4;stroke-dasharray:5 4}
+  .e-write{fill:none;stroke:#0B6E7F;stroke-width:1.9}
+  .e-fail{fill:none;stroke:#A63228;stroke-width:1.6}
+  .ah{fill:#12181E}.ah-d{fill:#5C6975}.ah-w{fill:#0B6E7F}.ah-r{fill:#A63228}
+</style>
+<rect x="0" y="0" width="1120" height="700" fill="#FFFFFF"/>
+
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" class="ah"/></marker>
+          <marker id="ard" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" class="ah-d"/></marker>
+          <marker id="arw" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" class="ah-w"/></marker>
+          <marker id="arr" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" class="ah-r"/></marker>
+        </defs>
+
+        <!-- eyebrows -->
+        <text class="t-eyebrow" x="40" y="48">DESIRED STATE — IN GIT</text>
+        <text class="t-eyebrow" x="350" y="48">THE AGENT — RUNS IN YOUR INFRA</text>
+        <text class="t-eyebrow" x="700" y="48">LEGEND</text>
+
+        <!-- legend -->
+        <line class="e-read" x1="700" y1="72" x2="734" y2="72" marker-end="url(#ard)"/>
+        <text class="t-sub" x="746" y="76">reads — changes nothing</text>
+        <line class="e-write" x1="700" y1="96" x2="734" y2="96" marker-end="url(#arw)"/>
+        <text class="t-sub" x="746" y="100">writes to the cluster</text>
+        <line class="e-fail" x1="700" y1="120" x2="734" y2="120" marker-end="url(#arr)"/>
+        <text class="t-sub" x="746" y="124">failure path</text>
+
+        <!-- git repo -->
+        <rect class="d-box" x="40" y="62" width="200" height="116" rx="3"/>
+        <text class="t-h" x="140" y="88" text-anchor="middle">git repo</text>
+        <text class="t-path" x="140" y="112" text-anchor="middle">topics/orders.yaml</text>
+        <text class="t-path" x="140" y="130" text-anchor="middle">topics/payments.yaml</text>
+        <text class="t-path" x="140" y="148" text-anchor="middle">schemas/orders.avsc</text>
+        <text class="t-sub" x="140" y="168" text-anchor="middle">one application directory</text>
+
+        <!-- piped -->
+        <rect class="d-box" x="350" y="62" width="250" height="96" rx="3"/>
+        <text class="t-h" x="475" y="88" text-anchor="middle">piped</text>
+        <text class="t-sub" x="475" y="110" text-anchor="middle">detects the new commit and checks out</text>
+        <text class="t-sub" x="475" y="126" text-anchor="middle">the last-deployed and target revisions</text>
+        <text class="t-sub" x="475" y="142" text-anchor="middle">of that directory</text>
+
+        <!-- git <-> piped -->
+        <line class="e" x1="350" y1="100" x2="242" y2="100" marker-end="url(#ar)"/>
+        <text class="t-edge" x="296" y="92" text-anchor="middle">polls</text>
+        <line class="e" x1="240" y1="132" x2="348" y2="132" marker-end="url(#ar)"/>
+        <text class="t-edge" x="296" y="150" text-anchor="middle">old + new commit</text>
+
+        <!-- plugin boundary -->
+        <rect class="d-bound" x="330" y="190" width="290" height="484" rx="4"/>
+        <text class="t-eyebrow" x="330" y="182">THIS PLUGIN</text>
+
+        <!-- piped -> plan -->
+        <line class="e" x1="475" y1="158" x2="475" y2="198" marker-end="url(#ar)"/>
+        <text class="t-edge" x="488" y="182">runs the KAFKA_* stages</text>
+
+        <!-- KAFKA_PLAN -->
+        <rect class="d-box" x="350" y="200" width="250" height="56" rx="3"/>
+        <text class="t-stage" x="475" y="224" text-anchor="middle">KAFKA_PLAN</text>
+        <text class="t-sub" x="475" y="243" text-anchor="middle">diff desired vs. actual · touches nothing</text>
+
+        <!-- plan -> diamond -->
+        <line class="e" x1="475" y1="256" x2="475" y2="284" marker-end="url(#ar)"/>
+
+        <!-- diamond -->
+        <polygon class="d-diamond" points="475,286 547,330 475,374 403,330"/>
+        <text class="t-dia" x="475" y="327" text-anchor="middle">blocked by the</text>
+        <text class="t-dia" x="475" y="340" text-anchor="middle">deploy target?</text>
+
+        <!-- blocked -> stop -->
+        <line class="e-fail" x1="403" y1="330" x2="302" y2="330" marker-end="url(#arr)"/>
+        <text class="t-edge-d" x="352" y="322" text-anchor="middle">blocked</text>
+        <rect class="d-box-stop" x="40" y="300" width="260" height="60" rx="3"/>
+        <text class="t-stop" x="170" y="326" text-anchor="middle">Deployment fails here</text>
+        <text class="t-sub" x="170" y="345" text-anchor="middle">nothing has been applied</text>
+
+        <!-- clean -> register -->
+        <line class="e" x1="475" y1="374" x2="475" y2="398" marker-end="url(#ar)"/>
+        <text class="t-edge" x="488" y="392">clean</text>
+
+        <!-- KAFKA_REGISTER_SCHEMA -->
+        <rect class="d-box" x="350" y="400" width="250" height="56" rx="3"/>
+        <text class="t-stage" x="475" y="424" text-anchor="middle">KAFKA_REGISTER_SCHEMA</text>
+        <text class="t-sub" x="475" y="443" text-anchor="middle">its own stage, so it can be ordered</text>
+
+        <line class="e" x1="475" y1="456" x2="475" y2="498" marker-end="url(#ar)"/>
+
+        <!-- KAFKA_APPLY -->
+        <rect class="d-box" x="350" y="500" width="250" height="56" rx="3"/>
+        <text class="t-stage" x="475" y="524" text-anchor="middle">KAFKA_APPLY</text>
+        <text class="t-sub" x="475" y="543" text-anchor="middle">not atomic — it reports how far it got</text>
+
+        <!-- fail -> rollback -->
+        <line class="e-fail" x1="475" y1="556" x2="475" y2="598" marker-end="url(#arr)"/>
+        <text class="t-edge-d" x="488" y="582">if a stage fails</text>
+
+        <!-- KAFKA_ROLLBACK -->
+        <rect class="d-box" x="350" y="600" width="250" height="56" rx="3"/>
+        <text class="t-stage" x="475" y="624" text-anchor="middle">KAFKA_ROLLBACK</text>
+        <text class="t-sub" x="475" y="643" text-anchor="middle">added automatically</text>
+
+        <!-- read bus: plan -> both external systems -->
+        <polyline class="e-read" points="600,228 665,228 665,352 1010,352 1010,498" marker-end="url(#ard)"/>
+        <polyline class="e-read" points="820,352 820,386" marker-end="url(#ard)"/>
+        <text class="t-edge" x="838" y="344" text-anchor="middle">reads actual state + compatibility</text>
+
+        <!-- Schema Registry -->
+        <rect class="d-box-ext" x="780" y="388" width="220" height="80" rx="3"/>
+        <text class="t-h" x="890" y="414" text-anchor="middle">Schema Registry</text>
+        <text class="t-sub" x="890" y="434" text-anchor="middle">subjects · versions</text>
+        <text class="t-sub" x="890" y="450" text-anchor="middle">compatibility rules</text>
+
+        <!-- register -> registry -->
+        <line class="e-write" x1="600" y1="428" x2="778" y2="428" marker-end="url(#arw)"/>
+        <text class="t-edge" x="700" y="420" text-anchor="middle">registers versions</text>
+
+        <!-- Kafka brokers -->
+        <rect class="d-box-ext" x="780" y="500" width="300" height="100" rx="3"/>
+        <text class="t-h" x="930" y="526" text-anchor="middle">Kafka brokers</text>
+        <text class="t-sub" x="930" y="548" text-anchor="middle">topics · partitions · configs</text>
+        <text class="t-sub" x="930" y="568" text-anchor="middle">the actual state</text>
+
+        <!-- apply -> brokers -->
+        <line class="e-write" x1="600" y1="530" x2="778" y2="530" marker-end="url(#arw)"/>
+        <text class="t-edge" x="700" y="522" text-anchor="middle">create / alter / delete</text>
+
+        <!-- rollback -> brokers -->
+        <polyline class="e-write" points="600,628 820,628 820,602" marker-end="url(#arw)"/>
+        <text class="t-edge" x="700" y="620" text-anchor="middle">restores what it can</text>
+      </svg>
