@@ -119,16 +119,7 @@ func buildSASL(cfg config.SASLConfig) (sasl.Mechanism, error) {
 
 // ListTopics dials a client of its own rather than reusing the one held by the
 // cluster, because an unfiltered listing reflects the set of topics the client
-// already knows about, not the set that exists on the broker. A client that has
-// created or altered a topic returns a listing that is missing entries: verified
-// against Redpanda, a topic created moments earlier is absent, and one whose
-// partitions were just changed can vanish from the listing entirely while the
-// broker reports it correctly.
-//
-// The plan is the input to every decision this plugin makes, so it has to be
-// read from the broker rather than from a cache that mutations have disturbed.
-// A connection per listing is a fair price: it happens a few times per
-// deployment, not in a hot path.
+// already knows about, not the set that exists on the broker.
 func (c *kafkaCluster) ListTopics(ctx context.Context) (map[string]TopicState, error) {
 	client, err := newKgoClient(c.cfg)
 	if err != nil {
