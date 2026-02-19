@@ -40,7 +40,7 @@ Three things fall out of that shape:
 
 ## Configuration
 
-### Deploy target: one Kafka cluster
+### Deploy target:
 
 The safety rails live on the deploy target, not on the application. The same application config gets
 deployed to staging and to production, so a rail defined per application would travel with the change
@@ -80,7 +80,7 @@ plugins:
 | `protectedTopics` | none | Globs this piped must never modify, whatever the application declares. |
 | `driftDetectionEnabled` | `true` | Compare live state against desired state outside a deployment. |
 
-### Application: a slice of a shared cluster
+### Application:
 
 ```yaml
 spec:
@@ -169,11 +169,6 @@ piped actually running this plugin, use [`docs/GETTING_STARTED.md`](docs/GETTING
 The test suite needs none of that. The cluster and registry sit behind interfaces, with in-memory
 implementations in `provider` that enforce the same rules the real ones do: partition counts only go
 up, and a deleted topic is really gone.
-
-## Status
-
-Early. The plan, apply, schema registration and rollback paths are implemented and tested. Drift
-detection and the live-state view aren't wired up yet.
 
 ## License
 
