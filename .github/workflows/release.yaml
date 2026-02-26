@@ -1,8 +1,12 @@
 name: release
 
 # Publishes the per-OS, per-arch binaries that piped downloads via the `url`
-# field in its plugin config.
+# field in its plugin config. Runs on a pushed version tag (`git tag v0.1.0 &&
+# git push --tags`), or manually via workflow_dispatch.
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
@@ -16,6 +20,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version || github.ref_name }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
@@ -29,13 +35,13 @@ jobs:
             os="${target%/*}"
             arch="${target#*/}"
             GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -ldflags "-s -w" -trimpath \
-              -o ".artifacts/plugin_kafka_${{ inputs.version }}_${os}_${arch}" .
+              -o ".artifacts/plugin_kafka_${VERSION}_${os}_${arch}" .
           done
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ inputs.version }}" \
-            --title "kafka ${{ inputs.version }}" \
+          gh release create "$VERSION" \
+            --title "kafka $VERSION" \
             --generate-notes \
             .artifacts/*
