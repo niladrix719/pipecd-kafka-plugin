@@ -151,7 +151,6 @@ declared gets reset to the broker default rather than left behind.
 parses or rewrites it. `schema.type` picks the dialect: `AVRO` (the default), `PROTOBUF` or `JSON`.
 
 ```json
-// schemas/orders.avsc
 {
   "type": "record",
   "name": "Order",
