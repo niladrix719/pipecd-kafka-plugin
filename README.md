@@ -145,6 +145,55 @@ schema:
 One file can hold several topics as a YAML stream. A config key that was set and is no longer
 declared gets reset to the broker default rather than left behind.
 
+### The schema file
+
+`schema.file` points at whatever the registry accepts, and the plugin sends it verbatim — it never
+parses or rewrites it. `schema.type` picks the dialect: `AVRO` (the default), `PROTOBUF` or `JSON`.
+
+```json
+// schemas/orders.avsc
+{
+  "type": "record",
+  "name": "Order",
+  "namespace": "com.example.orders",
+  "fields": [
+    { "name": "id", "type": "string" },
+    { "name": "customer_id", "type": "string" },
+    { "name": "total_cents", "type": "long" },
+    { "name": "currency", "type": "string", "default": "USD" }
+  ]
+}
+```
+
+`subject` is the registry key the schema is registered under, and it's yours to name. The convention
+most Kafka tooling assumes is `<topic>-value` for record values and `<topic>-key` for keys, which is
+why the example above is `orders-value`. Nothing enforces it, but a subject that doesn't follow it
+won't be found by consumers using the default naming strategy.
+
+Compatibility is the rule the registry checks a new version against, and it's what turns a schema
+change from a runtime surprise into a blocked plan:
+
+| Level | A new version must |
+| --- | --- |
+| `BACKWARD` (most registries' default) | be readable by consumers still on the old schema. Adding a field needs a `default`; removing a required field is refused. |
+| `FORWARD` | be readable by consumers already on the new schema. Removing a field is fine; adding a required one is refused. |
+| `FULL` | satisfy both of the above. |
+| `NONE` | nothing. The registry stops being a safety net. |
+
+That's why `currency` carries `"default": "USD"`. Under `BACKWARD`, a consumer reading a record
+written before that field existed has to get *something*, and without a default the registry refuses
+the whole version — which is exactly the `Blocked` case shown further down.
+
+The level in force is the one configured **on the subject in the registry**, not in this repository.
+The `compatibility:` key on a topic, and the `compatibility:` option on `KAFKA_REGISTER_SCHEMA`, are
+parsed and validated but not yet honored — they're reserved for managing the subject's level as
+desired state, which isn't implemented. Set the level with the registry's own `/config/{subject}`
+API for now.
+
+Compatibility is checked during `KAFKA_PLAN`, against the subject's current latest version, before
+anything is touched. Only `KAFKA_REGISTER_SCHEMA` writes to the registry, and an unchanged schema
+registers no new version, so re-deploying the same commit is a no-op rather than a version bump.
+
 ### Stage options
 
 ```yaml
