@@ -74,7 +74,7 @@ into production.
 plugins:
   - name: kafka
     port: 7020
-    url: https://github.com/niladrix719/pipecd-kafka-plugin/releases/download/v0.1.0/plugin_kafka_v0.1.0_linux_amd64
+    url: https://github.com/niladrix719/pipecd-kafka-plugin/releases/download/v1.0.12/plugin_kafka_v1.0.12_linux_amd64
     deployTargets:
       - name: prod
         config:

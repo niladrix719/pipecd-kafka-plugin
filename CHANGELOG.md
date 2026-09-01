@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.12
+
+- Live-state view: the topics an application owns, with their partition count, replication factor
+  and dynamic configs, and each topic's registry subject as a child resource.
+- Drift detection between deployments, decided by the same plan `KAFKA_PLAN` builds. A briefly
+  unreachable registry reports unknown rather than a false drift alarm. Honors
+  `driftDetectionEnabled` on the deploy target.
+
 ## v0.1.0
 
 First tagged release.

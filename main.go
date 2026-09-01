@@ -9,7 +9,7 @@ import (
 )
 
 // version is the plugin version reported to piped.
-const version = "0.1.0"
+const version = "1.0.12"
 
 func main() {
 	// One instance serves both roles: the live-state view builds the same plan
