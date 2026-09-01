@@ -11,11 +11,6 @@ import (
 
 // executePlan runs KAFKA_PLAN: it compares the desired state against the
 // cluster and reports what would change, without touching anything.
-//
-// The stage fails when the plan contains a blocked change. That is the point of
-// the stage: an irreversible operation the deploy target has not opted into
-// should stop the deployment while nothing has been applied, rather than
-// half-way through the apply.
 func (p *Plugin) executePlan(ctx context.Context, in stageInput) *sdk.ExecuteStageResponse {
 	lp := in.lp
 	var opts config.PlanStageOptions

@@ -1,12 +1,7 @@
 //go:build integration
 
-// These tests run against the real Kafka client and schema registry client,
-// using the cluster from docker-compose.yaml:
-//
-//	make up
-//	go test -tags integration ./provider/...
-//
-// They are behind a build tag so the default test run stays offline.
+// make up
+// go test -tags integration ./provider/...
 package provider
 
 import (

@@ -1,6 +1,3 @@
-// Package provider reads the desired state of an application from its
-// repository and talks to the Kafka cluster and schema registry that hold the
-// actual state.
 package provider
 
 import (

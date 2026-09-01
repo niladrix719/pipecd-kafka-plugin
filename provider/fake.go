@@ -11,9 +11,6 @@ import (
 
 // FakeCluster is an in-memory Cluster for tests, so the plan, apply and
 // rollback logic can be exercised without a broker.
-//
-// It enforces the rules that matter to this plugin: partition counts only go
-// up, and a deleted topic is really gone.
 type FakeCluster struct {
 	mu     sync.Mutex
 	topics map[string]TopicState

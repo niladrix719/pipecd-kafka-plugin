@@ -1,6 +1,3 @@
-// Package plan compares an application's desired state against the actual state
-// of a Kafka cluster and produces the ordered set of changes that would close
-// the gap, classified by whether each one can be undone.
 package plan
 
 import (
@@ -12,11 +9,6 @@ import (
 )
 
 // ChangeKind is the kind of operation a change performs.
-//
-// The reversibility of each kind is the central fact of this plugin. Kafka
-// offers no way to shrink a partition count or to bring back a deleted topic's
-// data, so a rollback can only ever undo part of what an apply did, and the
-// plan has to say which part before anything runs.
 type ChangeKind int
 
 const (

@@ -11,9 +11,6 @@ import (
 
 // executeRegisterSchema runs KAFKA_REGISTER_SCHEMA: it registers the new schema
 // versions in the plan, and nothing else.
-//
-// Compatibility was already checked while the plan was built, so a subject that
-// would break its consumers never reaches this stage.
 func (p *Plugin) executeRegisterSchema(ctx context.Context, in stageInput) *sdk.ExecuteStageResponse {
 	lp := in.lp
 	var opts config.RegisterSchemaStageOptions

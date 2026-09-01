@@ -1,7 +1,3 @@
-// Package config holds the three configuration scopes this plugin reads: the
-// plugin-scoped config, the deploy-target-scoped config describing one Kafka
-// cluster, and the application-scoped config describing the slice of that
-// cluster an application owns.
 package config
 
 import (
@@ -11,17 +7,11 @@ import (
 )
 
 // Config is the plugin-scoped configuration, set under plugins[].config in the
-// piped config. Everything meaningful is per deploy target or per application,
-// so there is nothing here yet.
+// piped config.
 type Config struct{}
 
 // DeployTargetConfig describes one Kafka cluster and what piped is permitted to
 // do to it.
-//
-// The safety rails live here rather than in the application config on purpose:
-// the same application config is deployed to staging and to production, so a
-// rail defined per application would travel with the change into production.
-// Defining them per target lets staging permit what production forbids.
 type DeployTargetConfig struct {
 	// BootstrapServers is the list of broker addresses.
 	BootstrapServers []string `json:"bootstrapServers"`
@@ -37,8 +27,7 @@ type DeployTargetConfig struct {
 	// Deleting a topic destroys its data and cannot be rolled back.
 	AllowTopicDeletion bool `json:"allowTopicDeletion"`
 	// AllowPartitionIncrease permits raising a topic's partition count.
-	// Partition counts can only ever increase, so this cannot be rolled back,
-	// and it changes how keys hash to partitions.
+	// Partition counts can only ever increase, so this cannot be rolled back.
 	AllowPartitionIncrease bool `json:"allowPartitionIncrease"`
 	// ProtectedTopics are glob patterns that this piped must never modify,
 	// whatever the application config says. Internal topics belong here.
@@ -94,11 +83,6 @@ type ApplicationConfigSpec struct {
 	// application directory.
 	SchemasDir string `json:"schemasDir,omitempty"`
 	// Ownership are glob patterns naming the topics this application manages.
-	//
-	// A Kafka cluster is shared by many applications. Without this scope, a plan
-	// would look at every topic on the cluster and propose deleting the ones it
-	// has no file for. Ownership is what makes deletion expressible without
-	// making it catastrophic.
 	Ownership []string `json:"ownership,omitempty"`
 	// Defaults are applied to any topic in this application that does not set
 	// them itself.
@@ -140,8 +124,7 @@ type RegisterSchemaStageOptions struct {
 // ApplyStageOptions configures a KAFKA_APPLY stage.
 type ApplyStageOptions struct {
 	// ContinueOnError keeps applying independent changes after one fails,
-	// instead of stopping at the first failure. It trades a clean stopping point
-	// for making progress on the changes that would have succeeded.
+	// instead of stopping at the first failure.
 	ContinueOnError bool `json:"continueOnError,omitempty"`
 }
 

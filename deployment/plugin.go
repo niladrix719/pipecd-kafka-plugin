@@ -1,5 +1,3 @@
-// Package deployment implements the PipeCD deployment plugin: the stages that
-// plan, register schemas for, apply and roll back an application's Kafka state.
 package deployment
 
 import (
@@ -15,12 +13,6 @@ import (
 )
 
 // The stages this plugin defines.
-//
-// Registration is a separate stage from apply so that it can be ordered against
-// the rollout of the services that produce and consume the topic. A
-// backward-compatible schema should be registered before consumers are updated;
-// a forward-compatible one before producers are. Folding registration into
-// apply would make that ordering impossible to express.
 const (
 	StagePlan           = "KAFKA_PLAN"
 	StageRegisterSchema = "KAFKA_REGISTER_SCHEMA"

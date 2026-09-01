@@ -1,21 +1,8 @@
 #!/usr/bin/env bash
 #
-# Brings up everything needed to exercise this plugin against a real PipeCD:
-# a Kafka cluster, a kind cluster, and the PipeCD control plane.
-#
 #   ./hack/local-env.sh up      # start it all
 #   ./hack/local-env.sh down    # tear it all down
 #   ./hack/local-env.sh status  # what is running
-#
-# Two things this deliberately does NOT do, both learned the hard way on an
-# 8 GB machine:
-#
-#   1. It installs the control plane from the published chart rather than
-#      building it. `make run/pipecd` in the pipecd repo compiles the Go
-#      binary and the web console inside a container; on a small VM that
-#      exhausts memory and takes the Docker daemon down with it.
-#   2. It creates a plain kind cluster with no local registry. The registry
-#      only exists to receive locally built images, which we do not build.
 
 set -euo pipefail
 
