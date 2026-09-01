@@ -106,6 +106,13 @@ func (s *ApplicationConfigSpec) TopicsDirOrDefault() string {
 	return s.TopicsDir
 }
 
+// DriftDetectionEnabledOrDefault reports whether drift detection should run.
+// An unset field means enabled: noticing that a cluster has drifted is the
+// safe default, and it only ever reads.
+func (c *DeployTargetConfig) DriftDetectionEnabledOrDefault() bool {
+	return c.DriftDetectionEnabled == nil || *c.DriftDetectionEnabled
+}
+
 // PlanStageOptions configures a KAFKA_PLAN stage.
 type PlanStageOptions struct {
 	// ExitOnNoChanges ends the pipeline successfully when the plan is empty,

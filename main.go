@@ -12,7 +12,14 @@ import (
 const version = "0.1.0"
 
 func main() {
-	plugin, err := sdk.NewPlugin(version, sdk.WithDeploymentPlugin(&deployment.Plugin{}))
+	// One instance serves both roles: the live-state view builds the same plan
+	// the deployment stages do, against the same cluster.
+	kafka := &deployment.Plugin{}
+
+	plugin, err := sdk.NewPlugin(version,
+		sdk.WithDeploymentPlugin(kafka),
+		sdk.WithLivestatePlugin(kafka),
+	)
 	if err != nil {
 		log.Fatalln(err)
 	}

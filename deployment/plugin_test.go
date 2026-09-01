@@ -135,6 +135,15 @@ config:
   retention.ms: "604800000"
 `
 
+const topicWithSchema = `
+name: orders
+partitions: 1
+replicationFactor: 1
+schema:
+  subject: orders-value
+  file: orders.avsc
+`
+
 func TestExecutePlan(t *testing.T) {
 	t.Parallel()
 
@@ -272,15 +281,6 @@ func TestExecuteApply(t *testing.T) {
 
 func TestExecuteRegisterSchema(t *testing.T) {
 	t.Parallel()
-
-	const topicWithSchema = `
-name: orders
-partitions: 1
-replicationFactor: 1
-schema:
-  subject: orders-value
-  file: orders.avsc
-`
 
 	t.Run("registers a new version", func(t *testing.T) {
 		t.Parallel()

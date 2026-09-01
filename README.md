@@ -38,6 +38,30 @@ Three things fall out of that shape:
   order it against a service rollout in the pipeline, for instance registering a backward-compatible
   schema before consumers update.
 
+## Drift detection
+
+Between deployments, piped periodically asks the plugin what's actually on the cluster. The plugin
+answers with two things: the live state, and whether it still matches the repository.
+
+The drift answer is the *same plan* `KAFKA_PLAN` would build. A plan that would change nothing means
+synced; anything else is drift, including changes the deploy target would refuse to apply — the
+cluster still differs from git, and a deployment wouldn't close the gap on its own. Deciding it this
+way means the drift badge and the plan stage can't disagree with each other.
+
+The live state lists the topics this application owns, with their partition count, replication factor
+and dynamic configs, and each topic's registry subject underneath it:
+
+| Shown as | When |
+| --- | --- |
+| healthy | The topic exists on the cluster, or the subject has a registered version. |
+| unhealthy | Declared in git but missing from the cluster, or a subject that was never registered. |
+| healthy, with a note | On the cluster but no longer declared. The topic is fine; the repository is what disagrees. |
+
+Everything here only reads. A topic another application owns is left out, and a cluster whose
+registry is briefly unreachable reports *unknown* rather than a false drift alarm. Set
+`driftDetectionEnabled: false` on a deploy target to skip the comparison and report only the live
+state.
+
 ## Configuration
 
 ### Deploy target:
