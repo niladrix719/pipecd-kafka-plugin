@@ -1,11 +1,11 @@
 # Getting started
 
 This walks through running the plugin against a real PipeCD control plane, a real piped, and a real
-Kafka cluster (Redpanda) — all on your own machine, no managed services or accounts required. It's the
-exact path used to develop and verify this plugin, gotchas included.
+Kafka cluster (Redpanda), all on your own machine, with no managed services or accounts required.
+It's the exact path used to develop and verify this plugin, gotchas included.
 
 If you just want to read what the plugin does without running anything, see the [README](../README.md)
-instead — the "How it works" and "Why this is not just apply the YAML" sections cover the design.
+instead. The "How it works" section covers the design.
 
 ## What you need
 
@@ -16,7 +16,7 @@ instead — the "How it works" and "Why this is not just apply the YAML" section
 | [kind](https://kind.sigs.k8s.io) | a local Kubernetes cluster for the control plane | 0.20+ |
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | talking to that cluster | any recent |
 | [Helm](https://helm.sh) | installing the control plane chart | 3.x |
-| a clone of [`pipe-cd/pipecd`](https://github.com/pipe-cd/pipecd) | **running piped itself** | — |
+| a clone of [`pipe-cd/pipecd`](https://github.com/pipe-cd/pipecd) | **running piped itself** | any recent |
 
 That last one is easy to miss: this repo is the *plugin*, not the CD agent that loads it. Piped
 (`pipedv1`) is alpha and isn't distributed as a downloadable release binary yet, so running it locally
@@ -26,11 +26,6 @@ repo:
 ```sh
 git clone https://github.com/pipe-cd/pipecd ~/pipecd
 ```
-
-**Memory note:** if your machine has 8&nbsp;GB of RAM or less, don't run `make run/pipecd` in that
-repo — it compiles the control plane's Go binary *and* its web console inside a Docker build, which can
-exhaust a small VM and crash the Docker daemon. Steps below install the control plane from its
-published Helm chart instead, which just pulls an image.
 
 ## 1. Bring up Kafka, a Kubernetes cluster, and the control plane
 
@@ -44,11 +39,11 @@ This one command:
 - builds the plugin binary into `~/.piped/plugins/kafka`
 - starts Redpanda (Kafka-API-compatible) and a schema registry via `docker compose`
 - creates a plain `kind` cluster
-- installs the PipeCD control plane from its published chart (`oci://ghcr.io/pipe-cd/chart/pipecd`) —
-  no local build
+- installs the PipeCD control plane from its published chart (`oci://ghcr.io/pipe-cd/chart/pipecd`),
+  with no local build
 
-It's idempotent — safe to re-run if a step fails partway, and `./hack/local-env.sh status` reports what's
-currently up.
+It's idempotent, so it's safe to re-run if a step fails partway, and `./hack/local-env.sh status`
+reports what's currently up.
 
 When it finishes, forward the control plane to your machine and leave this running in its own terminal:
 
@@ -56,17 +51,18 @@ When it finishes, forward the control plane to your machine and leave this runni
 kubectl -n pipecd port-forward svc/pipecd 8080
 ```
 
-Open `http://localhost:8080` — project `quickstart`, user `hello-pipecd`, password `hello-pipecd`.
+Open `http://localhost:8080`. The project is `quickstart`, the user `hello-pipecd`, and the password
+`hello-pipecd`.
 
 ## 2. Register a piped
 
 **Settings → Piped → +ADD.** Name it anything, save, and copy the **Piped ID** and the **base64-encoded
-key** it shows you — that dialog only shows the key once.
+key** it shows you, because that dialog only shows the key once.
 
 ## 3. Give piped somewhere to read topic definitions from
 
-Piped reads desired state from a git repo — it's never pushed to, only polled. For a local test, a bare
-repo on disk works exactly like a GitHub remote would:
+Piped reads desired state from a git repo, which it polls; nothing is ever pushed to it. For a local
+test, a bare repo on disk works exactly like a GitHub remote would:
 
 ```sh
 rm -rf ~/kafka-demo.git ~/kafka-demo
@@ -80,7 +76,7 @@ git remote add origin ~/kafka-demo.git
 git push -q origin main
 ```
 
-(To use a real GitHub repo instead, just push there and use its URL as `remote:` below — nothing else
+(To use a real GitHub repo instead, just push there and use its URL as `remote:` below. Nothing else
 changes.)
 
 Now write the piped config. Replace the `pipedID` and `pipedKeyData` with what step 2 gave you:
@@ -125,11 +121,11 @@ First run downloads a lot of Go modules and takes a few minutes. It's running on
 
 ## 4. Register the application
 
-Back in the UI: **Applications → +ADD → ADD FROM SUGGESTIONS**. Piped will have found the app —
-select it, and set:
+Back in the UI: **Applications → +ADD → ADD FROM SUGGESTIONS**. Piped will have found the app, so
+select it and set:
 
 - Piped: your piped
-- **Deploy target: `local - kafka`** — easy to miss, nothing works without it
+- **Deploy target: `local - kafka`** (easy to miss, and nothing works without it)
 - Path: `orders`, Config Filename: `app.pipecd.yaml`
 
 **SAVE**, open the application, click **SYNC**.
@@ -154,9 +150,9 @@ Then `KAFKA_REGISTER_SCHEMA` and `KAFKA_APPLY` run. Confirm the topics landed:
 docker exec kafka-plugin-redpanda rpk topic list
 ```
 
-## 6. The demo that actually matters: the safety gate
+## 6. Trigger the safety gate
 
-This is the behavior worth showing anyone — the same commit produces a different outcome depending on
+This is the behavior worth showing anyone: the same commit produces a different outcome depending on
 what the *cluster* has opted into, not what the application asks for.
 
 **Try an irreversible change.** Bump the partition count past what's currently allowed:
@@ -187,7 +183,7 @@ commit again. `KAFKA_PLAN` now succeeds, but says plainly what it's about to do:
 deploy target, so the deployment will continue.
 ```
 
-`rpk topic describe orders` now shows 24. Same application, same commit — the deploy target's policy
+`rpk topic describe orders` now shows 24. Same application, same commit; the deploy target's policy
 was the only thing that changed.
 
 ## Tearing down
@@ -197,30 +193,3 @@ was the only thing that changed.
 ```
 
 Ctrl-C both the `port-forward` and `make run/piped` terminals.
-
-## Troubleshooting
-
-**`Failed to make GitPath URL`** when registering the application. The control plane only accepts
-these remote schemes: `ssh`, `git`, `git+ssh`, `http`, `https`, `rsync`, `file`. A bare filesystem path
-like `/Users/you/kafka-demo.git` has no scheme and is rejected — use `file:///Users/you/kafka-demo.git`.
-
-**The application never shows up under ADD FROM SUGGESTIONS**, or piped logs
-`invalid ApplicationInfo.Path: value does not match regex pattern "^[^/].+$"`. The application config
-is sitting at the repository root. PipeCD requires it to live in a subdirectory — that's why
-`examples/simple` nests everything under `orders/` rather than the repo root.
-
-**Docker crashes or the control-plane install hangs** on a small machine. Don't run `make run/pipecd`
-in the `pipecd` repo — see the memory note above. If Docker Desktop is already wedged, fully quit it
-(`pkill -f "Docker Desktop"`, `pkill -f com.docker.backend`) rather than just closing the window, then
-relaunch; a half-killed session can leave the engine unreachable even though the app appears to be
-running.
-
-**The deployment page shows no stage timeline**, even though the deployment says SUCCESS or FAILURE.
-This is a version-skew issue between a `pipedv1` built from the tip of `pipecd`'s development branch
-and a control-plane chart pinned to an older release — cosmetic, not a sign anything is broken. You can
-always pull the real stage log directly:
-
-```sh
-kubectl exec -n pipecd deploy/pipecd-minio -- \
-  find /data/quickstart/log -iname '*.txt'   # find the log object for your deployment/stage IDs
-```
